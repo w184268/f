@@ -1,0 +1,117 @@
+name: 构建 APK
+
+on:
+  push:
+    branches: [ main, master ]
+  # 允许在 Actions 页面手动点一下重新构建，不用推代码
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 环境体检（出错时先看这一步的输出）
+        run: |
+          echo "==== 仓库结构（找 android / .github）===="
+          ls -la
+          echo "---- android 目录 ----"
+          ls -la android || echo "!! 没有 android 目录，说明上传时漏了"
+          echo "---- gradle 配置 ----"
+          ls -la android/gradle android/gradle/wrapper 2>/dev/null || true
+          echo "==== 工具版本 ===="
+          java -version 2>&1 || true
+          node -v 2>&1 || true
+          python3 -V 2>&1 || true
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          ls "$ANDROID_HOME" 2>/dev/null || echo "(ANDROID_HOME 不存在)"
+          echo "==== 现有 SDK 组件 ===="
+          ls "$ANDROID_HOME/platforms" 2>/dev/null || echo "(没有 platforms)"
+          ls "$ANDROID_HOME/build-tools" 2>/dev/null || echo "(没有 build-tools)"
+
+      - name: 安装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # 用 Gradle 官方 action 取代手动 curl 下载 zip：
+      # 它会处理缓存、校验、PATH，且和 dubbo/AGP 兼容性最好。
+      - name: 准备 Gradle 8.7
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      # GitHub 的构建机自带 ANDROID_HOME 和 sdkmanager。
+      # 这里补齐许可与目标 SDK；|| true 防止个别镜像路径不同把流程卡死
+      # —— 只要许可已接受，Gradle / AGP 会自动安装缺失的 SDK 组件。
+      - name: 接受 SDK 许可并安装构建工具
+        run: |
+          set +e
+          SDKMANAGER=""
+          for p in sdkmanager \
+                   "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+                   "$ANDROID_HOME/cmdline-tools/bin/sdkmanager" \
+                   "$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"; do
+            if command -v "$p" > /dev/null 2>&1; then SDKMANAGER="$p"; break; fi
+          done
+          echo "找到 sdkmanager: ${SDKMANAGER:-（没有，交给 AGP 自动装）}"
+          if [ -n "$SDKMANAGER" ]; then
+            yes | "$SDKMANAGER" --licenses > /dev/null 2>&1
+            "$SDKMANAGER" --install "platforms;android-34" "build-tools;34.0.0" > /dev/null 2>&1
+            echo "---- 安装后 platforms ----"
+            ls "$ANDROID_HOME/platforms" 2>/dev/null
+          fi
+          exit 0
+
+      - name: 缓存 Gradle 依赖
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle.kts') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: 编译 Debug APK
+        # 本项目零第三方依赖，只需 AGP + Kotlin 插件。失败自动重试两次，扛偶发网络抖动。
+        run: |
+          set +e
+          for i in 1 2 3; do
+            echo "===================== 第 $i 次尝试 ====================="
+            gradle assembleDebug --no-daemon --stacktrace --info 2>&1 | tee /tmp/build_$i.log
+            code=${PIPESTATUS[0]}
+            if [ "$code" = "0" ]; then echo "编译成功"; exit 0; fi
+            echo "::error::第 $i 次编译失败（退出码 $code）"
+            sleep 15
+          done
+          echo "==================== 三次都失败，以下是关键错误 ===================="
+          grep -nEi "error:|FAILURE:|What went wrong|Could not resolve|Could not find|Unresolved reference|expecting|fatal:" /tmp/build_1.log | head -60 || true
+          echo "=================================================================="
+          exit 1
+        working-directory: android
+
+      - name: 核对产物
+        run: ls -lh android/app/build/outputs/apk/debug/
+
+      - name: 上传 APK 成品
+        uses: actions/upload-artifact@v4
+        with:
+          name: watchbridge-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      # 万一还是失败，把日志一起传上去，方便排查（不用再翻 500 行控制台）
+      - name: 失败时上传构建日志
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            /tmp/build_*.log
+            android/app/build/reports/**
+          retention-days: 7
