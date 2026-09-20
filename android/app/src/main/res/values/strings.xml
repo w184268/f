@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">WatchBridge</string>
+    <string name="notify_service_label">微聊消息监听</string>
+    <string name="a11y_service_label">手表视频投递</string>
+
+    <string name="title_server">服务端配置</string>
+    <string name="hint_base_url">服务端地址，如 http://192.168.1.10:8787</string>
+    <string name="hint_api_key">API Key（服务端 bridge_key）</string>
+    <string name="title_watch_package">手表端 App 包名</string>
+    <string name="hint_watch_package">默认 com.xtc.watch</string>
+
+    <string name="btn_save">保存</string>
+    <string name="btn_test_conn">测试连接</string>
+    <string name="btn_send_test">投递一条测试视频</string>
+    <string name="btn_open_notify">开启消息监听权限</string>
+    <string name="btn_open_a11y">开启无障碍（自动发送）</string>
+    <string name="btn_pull_once">立即取件</string>
+    <string name="btn_clear_log">清空日志</string>
+</resources>

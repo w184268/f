@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    无障碍服务配置说明：
+    canRetrieveWindowContent=true  —— 必须，否则读不到小天才界面上的按钮
+    canPerformGestures=true        —— 兜底时用坐标点击
+    只监听小天才 App（packageNames），避免影响其他应用、也降低隐私顾虑
+-->
+<accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
+    android:description="@string/a11y_service_label"
+    android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewClicked"
+    android:accessibilityFeedbackType="feedbackGeneric"
+    android:accessibilityFlags="flagDefault|flagIncludeNotImportantViews|flagRetrieveInteractiveWindows"
+    android:canRetrieveWindowContent="true"
+    android:canPerformGestures="true"
+    android:notificationTimeout="100"
+    android:packageNames="com.xtc.watch"
+    android:settingsActivity="com.kid.watchbridge.MainActivity" />

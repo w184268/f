@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WatchTube 使用指南</title>
+<style>
+  :root{
+    --bg:#0f1115;--card:#171a21;--line:#252a33;--txt:#e8ebf0;--sub:#98a0b0;
+    --ok:#3ecf8e;--warn:#f5b844;--acc:#5b8cff;--pink:#ff7ab6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font:15px/1.75 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif}
+  .wrap{max-width:860px;margin:0 auto;padding:26px 20px 80px}
+  h1{font-size:25px;margin:0 0 6px}
+  .lead{color:var(--sub);margin:0 0 26px}
+  h2{font-size:19px;margin:34px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  h3{font-size:15px;margin:20px 0 10px;color:var(--acc)}
+  .flow{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:16px 18px;font-size:13px;line-height:2;color:#cfd6e2;overflow-x:auto}
+  .flow b{color:var(--ok)}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .card.rec{border-color:var(--acc);background:#141a2b}
+  .card h4{margin:0 0 8px;font-size:15px}
+  .card .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:99px;
+    background:#1e2530;color:var(--sub);margin-bottom:8px}
+  .card.rec .tag{background:var(--acc);color:#fff}
+  .card p{margin:0;color:var(--sub);font-size:13px;line-height:1.7}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;margin-bottom:10px}
+  .step .n{display:inline-flex;width:24px;height:24px;align-items:center;justify-content:center;
+    background:var(--acc);color:#fff;border-radius:50%;font-size:13px;font-weight:600;margin-right:8px}
+  .step p{margin:8px 0 0}
+  code{background:#0b0d11;border:1px solid var(--line);padding:2px 6px;border-radius:5px;
+    font-size:13px;color:#ffd479;font-family:ui-monospace,Menlo,Consolas,monospace}
+  pre{background:#0b0d11;border:1px solid var(--line);border-radius:8px;padding:12px 14px;
+    overflow-x:auto;font-size:13px;line-height:1.6;color:#d5dbe6}
+  pre code{background:none;border:none;padding:0;color:inherit}
+  .warn{background:#241d10;border:1px solid #453714;border-radius:10px;padding:12px 14px;
+    color:#f3d9a4;font-size:13px;margin:14px 0}
+  .tip{background:#12241c;border:1px solid #1d3c30;border-radius:10px;padding:12px 14px;
+    color:#a8e6c4;font-size:13px;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--sub);font-weight:500}
+  .copy{float:right;background:#1e2530;border:1px solid var(--line);color:var(--sub);
+    border-radius:6px;padding:1px 8px;font-size:11px;cursor:pointer}
+  .copy:hover{color:var(--acc);border-color:var(--acc)}
+  ul,ol{padding-left:22px;margin:8px 0}
+  li{margin:4px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>WatchTube 使用指南</h1>
+<p class="lead">孩子在手表上问一句，自动收到一段讲这件事的科普视频。这份指南按「照着点」的方式写，不需要编程基础。</p>
+
+<div class="flow">
+孩子在手表上说话/打字
+　↓ 小天才 App 弹出通知
+手机上的桥接程序 <b>（本指南要装的东西）</b>
+　↓ 通过局域网发给服务端
+服务端：理解问题 → 搜 B站 → 安全过滤 → 剪前 60 秒 → 压成 3MB
+　↓
+手机取回视频 → 写进相册 → 自动/一键发回微聊
+　↓  🎉
+<b>孩子抬起手腕就能看了</b>
+</div>
+
+<h2>先搞清楚：这套东西是两个部分</h2>
+<p>必须同时具备，缺一不可：</p>
+<table>
+  <tr><th>部分</th><th>跑在哪</th><th>干什么</th></tr>
+  <tr><td><b>服务端</b>（大脑）</td><td>你家的电脑 / 小主机 / NAS</td><td>理解问题、搜视频、压制</td></tr>
+  <tr><td><b>手机端</b>（手脚）</td><td>你的安卓手机</td><td>抓孩子的消息、把视频发回手表</td></tr>
+</table>
+<div class="tip"><b>服务端那台电脑要开着</b>，一般用家里的台式机或常年不关的小主机就行。</div>
+
+<h2>三选一：你的情况适合哪条路</h2>
+<div class="cards">
+  <div class="card rec">
+    <div class="tag">推荐 · 不用装任何软件</div>
+    <h4>A. GitHub 网页自动编 APK</h4>
+    <p>把项目传到 GitHub，它自带的构建机帮你编译成 APK，直接下载。全程网页操作，约 10 分钟。</p>
+  </div>
+  <div class="card">
+    <div class="tag">有电脑当选</div>
+    <h4>B. 用 Android Studio 编译</h4>
+    <p>装 Development 环境（约 1GB），然后点一下运行就装到手机。适合以后想自己改代码。</p>
+  </div>
+  <div class="card">
+    <div class="tag">只有手机 · 半自动</div>
+    <h4>C. 用 Tasker 免安装 APK</h4>
+    <p>装个 Tasker 配几条规则即可，但最后一步要手动点几下发送。</p>
+  </div>
+</div>
+
+<h2>第一部分：让服务端先跑起来</h2>
+<p>不管选哪条手机路线，这部分都要做。</p>
+
+<h3>第 1 步：装两个东西</h3>
+<ul>
+  <li><b>Python 3.10+</b>：<code>python.org</code> 下载安装，装的时候<b>务必勾选 "Add Python to PATH"</b></li>
+  <li><b>ffmpeg</b>：负责压制视频
+    <ul>
+      <li>Windows：去 <code>gyan.dev/ffmpeg/builds</code> 下载 essentials 版，解压后把里面的 <code>bin</code> 文件夹路径加到系统 PATH</li>
+      <li>Mac：<code>brew install ffmpeg</code></li>
+      <li>Ubuntu：<code>sudo apt install ffmpeg</code></li>
+    </ul>
+  </li>
+</ul>
+<p>验证装好没：终端里输入 <code>ffmpeg -version</code>，出版本号就成。</p>
+
+<h3>第 2 步：改配置</h3>
+<div class="step">
+  <span class="n">1</span> 进入项目里的 <code>server</code> 文件夹，把 <code>config.example.yaml</code> 复制一份，改名 <code>config.yaml</code>
+</div>
+<div class="step">
+  <span class="n">2</span> 用记事本/VS Code 打开 <code>config.yaml</code>，改这两处：
+<pre><code>server:
+  public_base_url: "http://192.168.1.10:8787"   ← 改成你自己电脑的局域网IP
+  bridge_key: "自己起一串密码"                   ← 手机App里要填一样的
+
+understanding:
+  api_key: "sk-xxxx"                            ← 留空也能跑（会自动降级）</code></pre>
+</div>
+<div class="step">
+  <span class="n">3</span> 查自己电脑的局域网 IP：
+  <ul>
+    <li>Windows：打开命令提示符，输入 <code>ipconfig</code>，找「IPv4 地址」</li>
+    <li>Mac/Linux：终端输入 <code>ip addr</code> 或 <code>ifconfig</code></li>
+  </ul>
+</div>
+
+<h3>第 3 步：启动</h3>
+<p>Windows 双击 <code>run.bat</code>；Mac/Linux 终端执行 <code>./run.sh</code>。</p>
+<p>看到 <b>"WatchTube 已启动"</b> 就成了。浏览器打开 <code>http://你的IP:8787</code> 是<b>家长看板</b>——孩子问了什么、选了哪条视频、里面的处理日志，全在这。</p>
+
+<h3>第 4 步：不用手机，先自测一遍</h3>
+<pre><code>python3 ../tools/selftest.py "恐龙为什么会灭绝啊"</code></pre>
+<p>看到「🎉 全链路跑通」说明服务端这边的活已经能干了。</p>
+
+<h2>第二部分：手机端</h2>
+
+<h3>路线 A · GitHub 网页编 APK（推荐）</h3>
+<p>原理：GitHub 免费提供云端编译机，你把代码传上去，它帮你编好 APK 让你下载。</p>
+
+<h3>先解决一件事：文件夹怎么传上去？</h3>
+<p>GitHub 网页<b>只能拖拽文件夹</b>，点「choose your files」是选不了文件夹的（那是单文件选择器）。所以按你的情况挑一种：</p>
+<div class="cards">
+  <div class="card rec">
+    <div class="tag">最稳 · 推荐</div>
+    <h4>① 拖文件夹进网页</h4>
+    <p>Chrome 或 Edge 打开仓库 → <b>Add file ▾</b> → <b>Upload files</b> → 把 <code>watchtube</code> 整个文件夹<b>按住拖到虚线框里</b> → 松手，底部填说明 → <b>Commit changes</b>。</p>
+  </div>
+  <div class="card">
+    <div class="tag">更傻瓜</div>
+    <h4>② 装 GitHub Desktop</h4>
+    <p>下载 desktop.github.com 装上并登录 → <b>File → Add local repository</b> 选 watchtube 文件夹 → 提示要不要建仓库就点是 → 右上角 <b>Publish repository</b>，名字填仓库名、勾掉 Keep this code private → 发布。</p>
+  </div>
+  <div class="card">
+    <div class="tag">命令行</div>
+    <h4>③ 跑一条脚本</h4>
+    <p>不想点来点去就双击 <code>tools\push_github.bat</code>（Windows）或执行 <code>bash tools/push_github.sh</code>，把仓库地址当参数带上。</p>
+  </div>
+</div>
+<div class="warn">
+  ⚠️ <b>上传后务必检查一件事</b>：仓库文件列表里点开 <code>.github/workflows/build-apk.yml</code> 看在不在。这个隐藏目录偶尔会被浏览器跳过，它没了 Actions 就不会触发。<br>
+  没有 → 换方案 ② 或 ③ 重传一遍。
+</div>
+<h3>如果上传时提示「此文件是隐藏的」</h3>
+<p>GitHub 网页上传会拒绝以 <code>.</code> 开头的隐藏文件和目录 —— <code>.github</code>、<code>.gitignore</code> 都属此类。<b>不用重传全部文件</b>，其他文件都已经在仓库里了，只要单独补建一个工作流文件：</p>
+<div class="step">
+  <span class="n">1</span> 仓库首页 → <b>Add file ▾</b> → 这次选 <b>Create new file</b>（不是 Upload files）
+</div>
+<div class="step">
+  <span class="n">2</span> 顶部那个文件名输入框里，<b>手动敲完整路径</b>：<code>.github/workflows/build-apk.yml</code><br>
+  <span style="color:var(--sub);font-size:13px">框里默认是灰字提示，直接输入上面这串（含两个目录层），GitHub 会自动把目录建出来 —— <b>走"新建文件"这条路不受隐藏文件限制</b>。</span>
+</div>
+<div class="step">
+  <span class="n">3</span> 把下面这段<b>原样粘进</b>页面的大文本框里（点代码块右上角的「复制」按钮）：
+</div>
+<pre><code>name: 构建 APK
+
+on:
+  push:
+    branches: [ main, master ]
+  # 允许在 Actions 页面手动点一下重新构建，不用推代码
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      # GitHub 的构建机自带 ANDROID_HOME 和 sdkmanager。
+      # 这里补齐许可与目标 SDK；加 || true 是为了避免个别镜像路径不同把流程卡死
+      # —— 只要许可已接受，Gradle / AGP 会自动安装缺失的 SDK 组件。
+      - name: 接受 SDK 许可并安装构建工具
+        run: |
+          set +e
+          yes | sdkmanager --licenses &gt; /dev/null 2&gt;&amp;1
+          sdkmanager --install "platforms;android-34" "build-tools;34.0.0" &gt; /dev/null 2&gt;&amp;1
+          if [ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses &gt; /dev/null 2&gt;&amp;1
+            "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-34" "build-tools;34.0.0" &gt; /dev/null 2&gt;&amp;1
+          fi
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME" || true
+          exit 0
+
+      - name: 安装 Gradle 8.7
+        run: |
+          set -e
+          curl -fsSL -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
+          unzip -q /tmp/gradle.zip -d /opt
+          echo "/opt/gradle-8.7/bin" &gt;&gt; "$GITHUB_PATH"
+          /opt/gradle-8.7/bin/gradle --version | head -5
+
+      - name: 缓存 Gradle 依赖
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('android/**/*.gradle.kts', 'android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: gradle-${{ runner.os }}-
+
+      - name: 编译 Debug APK
+        run: gradle assembleDebug --no-daemon --stacktrace
+        working-directory: android
+
+      - name: 核对产物
+        run: ls -lh android/app/build/outputs/apk/debug/
+        working-directory: ${{ github.workspace }}/
+
+      - name: 上传 APK 成品
+        uses: actions/upload-artifact@v4
+        with:
+          name: watchbridge-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30</code></pre>
+<div class="step">
+  <span class="n">4</span> 拉到底点 <b>Commit changes</b>，再去 Actions 页面，构建就会自己开始
+</div>
+<div class="tip">
+  💡 <code>.gitignore</code> 同样传不上去，但它<b>只影响你本地 git 的行为，不影响编译</b>，可以不补。<br>
+  真想要的话，用同样办法在文件名框输入 <code>.gitignore</code> 建一个即可。
+</div>
+
+
+<div class="step">
+  <span class="n">1</span> 打开 <code>github.com</code> 注册/登录（免费的），点右上角 <b>+</b> → <b>New repository</b>
+</div>
+<div class="step">
+  <span class="n">2</span> 仓库名随便填（比如 <code>watchtube</code>），选 <b>Public</b>（公开仓库的构建额度完全免费），勾选 Add a README，点创建
+</div>
+<div class="step">
+  <span class="n">3</span> 仓库建好后停在首页，用<b>上面三种办法之一</b>把 <code>watchtube</code> 整个文件夹传进来（推荐直接拖进去）
+</div>
+<div class="step">
+  <span class="n">4</span> 点页面上方的 <b>Actions</b> 标签：左边列表里应该有「<b>构建 APK</b>」，右边是它的运行记录，第一条带 🟡 黄圈正在跑 —— <b>什么都不用点，等 5–10 分钟</b>
+</div>
+<div class="warn">
+  ⚠️ <b>如果进来看到的是「欢迎使用 GitHub Actions」的引导页</b>，说明 <code>.github</code> 没传上来 —— 别在那一页选模板，回头<b>换 GitHub Desktop 或脚本重传一次</b>。<br>
+  引导页下方的 <b>skip this and set up an existing workflow yourself</b> 是给「自己手写工作流」用的，你已经有工作流了，不需要。
+</div>
+
+<h3>看到「Workflows aren't being run on this repository」怎么办</h3>
+<div class="warn">
+  完整提示一般是这样：<br>
+  <code>Workflows aren't being run on this repository</code><br>
+  <code>GitHub Actions is not currently enabled on this repository.</code><br><br>
+  这<b>不是</b>你的工作流写错了 —— 是仓库层面<b>还没打开 Actions 开关</b>。新仓库默认可以是关闭状态。
+</div>
+<div class="step">
+  <span class="n">1</span> 仓库页面最上面那排标签，点 <b>Settings</b>（最右边，齿轮图标）
+</div>
+<div class="step">
+  <span class="n">2</span> <b>左侧栏</b>往下拉，找到 <b>Actions</b> → 点 <b>General</b><br>
+  <span style="color:var(--sub);font-size:13px">注意：<b>是左侧栏的 Actions</b>，不是顶部标签那个 Actions。路径是 <code>Settings → Actions → General</code>。</span>
+</div>
+<div class="step">
+  <span class="n">3</span> 页面往下滚到 <b>Actions permissions</b> 这一段，选中 <b>Allow all actions and reusable workflows</b>（允许所有操作）
+</div>
+<div class="step">
+  <span class="n">4</span> 页面最下面点绿色的 <b>Save</b> 保存
+</div>
+<div class="step">
+  <span class="n">5</span> 回到顶部 <b>Actions</b> 标签，现在左边就能看到「<b>构建 APK</b>」了。若还没跑，按下面「手动开一下」点一次 <b>Run workflow</b>
+</div>
+<div class="tip">
+  💡 <b>还有两种少见情况</b>：<br>
+  ① <b>企业/学校账号</b>：组织可能被管理员统一禁用了 Actions，Settings 里找不到开关，只能找管理员开。<br>
+  ② <b>只看到 Workspace 模板页</b>：说明 <code>.github/workflows/</code> 里真的没文件，回去按上一节「此文件是隐藏的」补建。
+</div>
+
+<h3>没自动跑？手动开一下</h3>
+<div class="step">
+  <span class="n">1</span> 在 Actions 页面<b>左侧列表</b>点「<b>构建 APK</b>」这一项（不是点右边那条运行记录）
+</div>
+<div class="step">
+  <span class="n">2</span> 右侧顶部会出现一条浅蓝提示条，右边有个灰色的 <b>Run workflow ▾</b> 按钮，点它
+</div>
+<div class="step">
+  <span class="n">3</span> 弹窗里 <b>Use workflow from</b> 下拉选 <code>Branch: main</code>（必须选对，选别的分支没有工作流），右边绿色的 <b>Run workflow</b> 点下去
+</div>
+<div class="step">
+  <span class="n">4</span> 页面刷新，上面多一条正在转圈的记录，点进去可以看实时日志
+</div>
+
+<h3>怎么知道成没成</h3>
+<table>
+  <tr><th>你看到的</th><th>意思 / 怎么办</th></tr>
+  <tr><td>🟡 黄圈在转</td><td>正在编，别急，第一次要拉一堆依赖</td></tr>
+  <tr><td>✅ 绿色打勾</td><td>成功。拉到页面最下面 <b>Artifacts</b> 区下载 <code>watchbridge-debug-apk</code></td></tr>
+  <tr><td>❌ 红色叉</td><td>失败。点进去找到第一个报错步骤，把红字截图发我</td></tr>
+  <tr><td>Actions 页面空空 / 只有引导页</td><td><code>.github</code> 没传上来，换 Desktop 或脚本重传</td></tr>
+  <tr><td>Android Studio 同步卡住 / 下不动</td><td>网络问题。先关全局代理再试；项目已内置阿里云镜像</td></tr>
+  <tr><td>IDE 提示 <code>kotlinOptions</code> 已废弃或报错</td><td>已改成新版 <code>kotlin{compilerOptions{}}</code> 写法，1.9 / 2.x 都兼容，拉最新代码即可</td></tr>
+  <tr><td>「Workflows aren't being run on this repository」</td><td>仓库没开 Actions 开关 → <code>Settings → Actions → General</code> 选 Allow all actions 并 Save</td></tr>
+  <tr><td>Run workflow 按钮点了没反应</td><td>仓库默认分支不是 main —— 仓库首页左上角那个分支名点开，改成 <code>main</code></td></tr>
+</table>
+<div class="tip">
+  💡 顺手说一句：这个工作流设的是「<b>有 push 就跑</b>」，所以哪怕你只改了 <code>server/</code> 或文档，Actions 也会重编一遍 —— 无害，就是白等几分钟。<br>
+  想省时间，commit 消息里带上 <code>[skip ci]</code>，比如 <code>改了点配置 [skip ci]</code>，就不会触发。
+</div>
+<div class="step">
+  <span class="n">5</span> 变绿打勾 ✅ 后点进去，拉到页面底部 <b>Artifacts</b> 区，点 <code>watchbridge-debug-apk</code> 下载
+</div>
+<div class="step">
+  <span class="n">6</span> 解压 zip，得到 <code>app-debug.apk</code>，<b>传到手机安装</b>（微信/QQ 传给自己，或用数据线）
+</div>
+<div class="warn">
+  ⚠️ 如果你已经把填了真实密码的 <code>config.yaml</code> 传上去了 —— 公开仓库里别放真实密码，APK 里不含它，不影响使用，但建议把 <code>server/config.yaml</code> 删掉再传。
+</div>
+<div class="tip">
+  💡 这一步我无法替你实跑（沙箱里连不上 Google 的 SDK 下载站），所以万一 Actions 报红：把报错信息发我，我来改。这是很标准的构建流程，成功率很高。
+</div>
+
+<h3>路线 B · 用 Android Studio 编译（电脑软件，最直观）</h3>
+<div class="tip">
+  <b>这条路线现在很推荐。</b>项目已经改成<b>零第三方依赖</b>，Android Studio 第一次同步只要拉 AGP + Kotlin 两个插件，
+  不需要再下 20 多个 androidx 库 —— 国内网络也能顺利跑通。
+</div>
+<div class="step">
+  <span class="n">1</span> 下载安装 <b>Android Studio</b>：<code>developer.android.com/studio</code>（约 1GB，一路下一步；装完首启会给一个 Setup Wizard，选 <b>Standard</b> 即可，它会顺手把 SDK 装好）
+</div>
+<div class="step">
+  <span class="n">2</span> 启动后选 <b>Open</b>（不是 New Project），目录选中项目里的 <code>android</code> 文件夹 —— 注意是 <b>android 这一层</b>，不是最外层的 watchtube
+</div>
+<div class="step">
+  <span class="n">3</span> 右下角弹 <b>Trust Project</b> 就点同意；然后<b>等右下角进度条跑完</b>（同步 Gradle）。零依赖的情况下大约 2–5 分钟
+</div>
+<div class="warn">
+  ⚠️ 如果同步报 <code>Failed to resolve: com.android.tools.build:gradle</code> 之类的下载失败 —— 网络问题。项目里已经预置了阿里云镜像，一般不会遇到；
+  真遇到就检查是否开了全局代理（关掉再试），或点 <b>File → Invalidate Caches / Restart</b>。
+</div>
+<div class="step">
+  <span class="n">4</span> 手机：设置 → 关于手机 → <b>连点"版本号"7 次</b> 打开开发者模式 → 返回 → 开发者选项里开 <b>USB 调试</b>
+</div>
+<div class="step">
+  <span class="n">5</span> 数据线连电脑，手机上允许 USB 调试。屏幕右上角设备列表里会出现你的手机
+</div>
+<div class="step">
+  <span class="n">6</span> 点绿色三角 ▶️ 运行，手机会自动装上 WatchBridge
+</div>
+
+<h3>路线 C · Tasker 免 APK（最后一步手动）</h3>
+<p>适合：不想折腾编译，愿意每次手动发出去。</p>
+<div class="step">
+  <span class="n">1</span> 手机装 <b>Tasker</b> + <b>AutoNotification</b> 两个 App
+</div>
+<div class="step">
+  <span class="n">2</span> Tasker 里新建 Profile：Event → Plugin → AutoNotification → Intercept，Apps 选<b>小天才</b>，勾选 <b>Include Notification Text</b>
+</div>
+<div class="step">
+  <span class="n">3</span> 关联任务里加 HTTP Request 动作：
+<pre><code>Method:  POST
+URL:     http://你的电脑IP:8787/api/v1/ingest
+Headers: Content-Type:application/json
+Body:    {"sender":"孩子","text":"%antext"}</code></pre>
+</div>
+<div class="step">
+  <span class="n">4</span> 再建一个定时 Profile（每 2 分钟），用 HTTP Request 取件：<code>http://你的IP:8787/api/v1/outbox</code>，把返回的 <code>video_url</code> 下载下来存到相册
+</div>
+<div class="step">
+  <span class="n">5</span> <b>收到通知后手动操作</b>：打开小天才 App → 微聊 → 发送相册里刚下载的视频
+</div>
+
+<h2>第三部分：装完 App 后配置四件事</h2>
+<div class="step">
+  <span class="n">1</span> 打开 WatchBridge，填<b>服务端地址</b>（<code>http://你的电脑IP:8787</code>）和<b>API Key</b>（你在 config.yaml 里写的那个），点<b>保存</b>
+</div>
+<div class="step">
+  <span class="n">2</span> 点 <b>测试连接</b>，看到「连通正常」就是通了 —— 通不了的话检查两端是不是在同一个 WiFi
+</div>
+<div class="step">
+  <span class="n">3</span> 点 <b>开启消息监听权限</b>，在系统设置里勾选 WatchBridge<br>
+  点 <b>加入电池优化白名单</b>（不加的话半夜会被系统杀掉）
+</div>
+<div class="step">
+  <span class="n">4</span> 想要全自动的话，点 <b>开启无障碍</b>，找到「手表视频投递」打开<br>
+  <span style="color:var(--sub);font-size:13px">建议先开着「干跑模式」跑一次：它会把小天才界面上的按钮全部记到日志里但不真点，对着日志把发送脚本调准，再关掉干跑。</span>
+</div>
+
+<h2>验收：让孩子问一句试试</h2>
+<p>让孩子在手表上说「为什么天是蓝色的」，30 秒左右：</p>
+<ol>
+  <li>App 日志里应看到「捕获消息」→「已提交服务端」</li>
+  <li>大约 40 秒后看到「下载完成」→「投递完成」</li>
+  <li>孩子手表上收到一段 60 秒的视频</li>
+  <li>家长看板同步显示这条记录</li>
+</ol>
+
+<h2>常见问题</h2>
+<table>
+  <tr><th>症状</th><th>大概率原因</th></tr>
+  <tr><td>孩子发消息，服务端毫无反应</td><td>通知监听没授权；或同一句话 8 秒内重复被去重了</td></tr>
+  <tr><td>App 一直显示"取件失败"</td><td><code>public_base_url</code> 填错了；手机和电脑不在同一网络</td></tr>
+  <tr><td>服务端报编码器错误</td><td>ffmpeg 没装好，或版本太老</td></tr>
+  <tr><td>自动发送点了乱七八糟的地方</td><td>脚本按钮对不上，开干跑模式看日志调</td></tr>
+  <tr><td>隔天不工作了</td><td>被省电策略杀了，加白名单（各路径见 README）</td></tr>
+  <tr><td>孩子收不到视频</td><td>你的手表型号不支持微聊视频 —— 先用手在小天才 App 里给孩子发个视频试试。<br>不行就把 <code>reply_mode</code> 改成 <code>audio</code>（语音讲解）</td></tr>
+</table>
+
+<div class="tip">
+  🎯 <b>一句话总结</b>：服务端跑在家里电脑（自测脚本验证通过即可），手机上用 GitHub 编出来的 APK 装上授权，
+  然后让孩子在手表上问一个问题试试。有报错随时把日志贴出来。
+</div>
+
+</div>
+
+<script>
+// 点击代码块右上角的小按钮即可复制命令
+document.querySelectorAll('pre').forEach(function(p){
+  var b = document.createElement('button');
+  b.className = 'copy'; b.textContent = '复制';
+  b.onclick = function(){
+    navigator.clipboard.writeText(p.innerText.replace('复制','').trim());
+    b.textContent = '已复制'; setTimeout(function(){ b.textContent = '复制'; }, 1500);
+  };
+  p.insertBefore(b, p.firstChild);
+});
+</script>
+</body>
+</html>
